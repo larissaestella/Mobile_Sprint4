@@ -1,5 +1,40 @@
 import { CategoriaMissao, Missao, StatusMissao, TipoMissao } from "../types";
 
+export const ATIVIDADES_ONBOARDING: Record<
+  CategoriaMissao,
+  {
+    id: string;
+    titulo: string;
+    descricao: string;
+    tipo: TipoMissao;
+  }[]
+> = {
+  [CategoriaMissao.Mental]: [
+    { id: "mental-respiracao", titulo: "Respiração consciente", descricao: "Faça uma pausa curta para respirar com atenção.", tipo: TipoMissao.Simples },
+    { id: "mental-diario", titulo: "Diário de humor", descricao: "Registre como você está se sentindo hoje.", tipo: TipoMissao.Reativa },
+    { id: "mental-foco", titulo: "Bloco de foco", descricao: "Faça uma tarefa sem distrações por alguns minutos.", tipo: TipoMissao.Progressiva },
+    { id: "mental-pausa", titulo: "Pausa mental", descricao: "Afaste-se das telas e observe o ambiente.", tipo: TipoMissao.Simples },
+  ],
+  [CategoriaMissao.Fisica]: [
+    { id: "fisica-alongamento", titulo: "Alongamento ativo", descricao: "Alongue ombros, pernas e costas.", tipo: TipoMissao.Progressiva },
+    { id: "fisica-caminhada", titulo: "Caminhada leve", descricao: "Caminhe em ritmo confortável.", tipo: TipoMissao.Simples },
+    { id: "fisica-mobilidade", titulo: "Mobilidade articular", descricao: "Movimente pescoço, ombros, quadril e tornozelos.", tipo: TipoMissao.Progressiva },
+    { id: "fisica-postura", titulo: "Ajuste de postura", descricao: "Revise sua postura e faça uma pausa ativa.", tipo: TipoMissao.Reativa },
+  ],
+  [CategoriaMissao.Lazer]: [
+    { id: "lazer-musica", titulo: "Ouvir música", descricao: "Escolha uma música para relaxar de verdade.", tipo: TipoMissao.Simples },
+    { id: "lazer-criativo", titulo: "Momento criativo", descricao: "Desenhe, escreva ou crie algo simples.", tipo: TipoMissao.Progressiva },
+    { id: "lazer-pausa", titulo: "Pausa de lazer", descricao: "Separe um momento curto para algo prazeroso.", tipo: TipoMissao.Simples },
+    { id: "lazer-social", titulo: "Conexão social", descricao: "Envie uma mensagem positiva para alguém.", tipo: TipoMissao.Reativa },
+  ],
+  [CategoriaMissao.Sono]: [
+    { id: "sono-telas", titulo: "Reduzir telas", descricao: "Diminua o uso de telas antes de dormir.", tipo: TipoMissao.Reativa },
+    { id: "sono-ambiente", titulo: "Preparar ambiente", descricao: "Organize luz, temperatura e conforto do quarto.", tipo: TipoMissao.Simples },
+    { id: "sono-rotina", titulo: "Rotina de desaceleração", descricao: "Faça uma sequência calma antes de deitar.", tipo: TipoMissao.Progressiva },
+    { id: "sono-reflexao", titulo: "Fechamento do dia", descricao: "Anote uma coisa boa e uma pendência para amanhã.", tipo: TipoMissao.Simples },
+  ],
+};
+
 export const MISSOES: Missao[] = [
   {
     id: "1",
@@ -55,7 +90,28 @@ export const MISSOES: Missao[] = [
   },
 ];
 
-export function gerarMissoesPersonalizadas(foco: CategoriaMissao, tempoDiario: number) {
+export function gerarMissoesPersonalizadas(foco: CategoriaMissao, tempoDiario: number, atividadesSelecionadas: string[] = []) {
+  if (atividadesSelecionadas.length > 0) {
+    const atividades = ATIVIDADES_ONBOARDING[foco].filter((atividade) =>
+      atividadesSelecionadas.includes(atividade.id)
+    );
+    const duracaoBase = Math.max(5, Math.floor(tempoDiario / Math.max(1, atividades.length)));
+
+    return atividades.map((atividade, index) => ({
+      id: `onboarding-${atividade.id}`,
+      titulo: atividade.titulo,
+      descricao: atividade.descricao,
+      categoria: foco,
+      tipo: atividade.tipo,
+      recompensaXp: Math.min(80, Math.max(20, duracaoBase * 4)),
+      recompensaMoedas: Math.min(25, Math.max(5, Math.ceil(duracaoBase / 2))),
+      duracaoMinutos: duracaoBase + index * 5 <= 45 ? duracaoBase + index * 5 : 45,
+      status: StatusMissao.Pendente,
+      progressoAtual: 0,
+      objetivo: 1,
+    }));
+  }
+
   const limite = tempoDiario <= 10 ? 2 : tempoDiario <= 20 ? 3 : 4;
   const focoPrimeiro = [...MISSOES].sort((a, b) => {
     if (a.categoria === foco && b.categoria !== foco) return -1;

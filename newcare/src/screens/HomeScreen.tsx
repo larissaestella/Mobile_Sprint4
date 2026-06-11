@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import * as Location from "expo-location";
 import { Socket } from "socket.io-client";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 import { useApp } from "../context/AppContext";
 import { CardMissao } from "../components/CardMissao";
 import { StatusMissao } from "../types";
@@ -9,6 +11,7 @@ import { AppColors } from "../../constants/theme";
 import { BrandHeader } from "../components/BrandHeader";
 import { conectarSocketIo, publicarCalculoAguaIo, publicarConsumoAguaIo, REALTIME_URL } from "../services/realtime";
 import { AguaResultado, LeituraIoT } from "../types/realtime";
+import { RootStackParamList } from "../routes/types";
 
 const MEDIDAS_AGUA = [250, 300, 500, 750, 1000, 1500, 2000];
 
@@ -33,6 +36,7 @@ export function HomeScreen() {
     registrarAguaBebida,
   } = useApp();
   const styles = criarStyles(colors);
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const socketRef = useRef<Socket | null>(null);
   const [socketConectado, setSocketConectado] = useState(false);
   const [leituras, setLeituras] = useState<Record<string, LeituraIoT>>({});
@@ -284,6 +288,9 @@ export function HomeScreen() {
         <Text style={styles.feedbackTexto}>
           {erroRealtime ?? localizacaoTexto ?? `Servidor: ${REALTIME_URL}`}
         </Text>
+        <Pressable style={styles.botaoDetalheAgua} onPress={() => navigation.navigate("Hidratacao")}>
+          <Text style={styles.botaoSecundarioTexto}>Ver hidratação detalhada</Text>
+        </Pressable>
       </View>
 
       <View style={styles.medidorCard}>
@@ -353,7 +360,11 @@ export function HomeScreen() {
         data={pendentes.length > 0 ? pendentes : missoes}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <CardMissao missao={item} onPress={concluirMissao} />
+          <CardMissao
+            missao={item}
+            onPress={concluirMissao}
+            onDetalhes={(missaoId) => navigation.navigate("DetalheMissao", { missaoId })}
+          />
         )}
         ListHeaderComponent={cabecalho}
         ListEmptyComponent={
@@ -588,6 +599,15 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
   botaoSecundarioTexto: {
     color: colors.text,
     fontWeight: "900",
+  },
+  botaoDetalheAgua: {
+    alignItems: "center",
+    backgroundColor: colors.primarySoft,
+    borderRadius: 10,
+    justifyContent: "center",
+    marginTop: 12,
+    minHeight: 42,
+    paddingHorizontal: 12,
   },
   feedbackTexto: {
     color: colors.muted,

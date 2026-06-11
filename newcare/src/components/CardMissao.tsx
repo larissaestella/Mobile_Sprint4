@@ -6,6 +6,7 @@ import { useApp } from "../context/AppContext";
 interface Props {
   missao: Missao;
   onPress: (id: string) => void;
+  onDetalhes?: (id: string) => void;
 }
 
 const categoriaEmoji = {
@@ -15,7 +16,7 @@ const categoriaEmoji = {
   sono: "😴",
 };
 
-export function CardMissao({ missao, onPress }: Props) {
+export function CardMissao({ missao, onPress, onDetalhes }: Props) {
   const { colors } = useApp();
   const styles = criarStyles(colors);
   const concluida = missao.status === StatusMissao.Concluida;
@@ -41,6 +42,11 @@ export function CardMissao({ missao, onPress }: Props) {
       >
         <Text style={styles.botaoTexto}>{concluida ? "Concluída" : "Completar missão"}</Text>
       </TouchableOpacity>
+      {onDetalhes && (
+        <TouchableOpacity style={styles.botaoDetalhes} onPress={() => onDetalhes(missao.id)}>
+          <Text style={styles.botaoDetalhesTexto}>Ver detalhes</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -106,5 +112,17 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
     color: "#fff",
     textAlign: "center",
     fontWeight: "700",
+  },
+  botaoDetalhes: {
+    borderColor: colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 8,
+    padding: 11,
+  },
+  botaoDetalhesTexto: {
+    color: colors.text,
+    fontWeight: "800",
+    textAlign: "center",
   },
 });

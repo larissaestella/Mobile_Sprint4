@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { MISSOES, gerarMissoesPersonalizadas } from "../data/missoes";
-import { AtualizarPerfilDados, CategoriaMissao, Conquista, HidratacaoDiaria, Missao, NovaMissaoDados, OnboardingPerfil, PreferenciasUsuario, StatusMissao, TipoMissao, Usuario } from "../types";
+import { AtualizarPerfilDados, CadastroDados, CategoriaMissao, Conquista, HidratacaoDiaria, Missao, NovaMissaoDados, OnboardingPerfil, PreferenciasUsuario, StatusMissao, TipoMissao, Usuario } from "../types";
 import { buscar, remover, salvar } from "../services/storage";
 import { Colors, PALETA_PADRAO, PaletaAcessibilidadeId, AppColors } from "../../constants/theme";
 
@@ -11,10 +11,16 @@ interface ContextData {
   hidratacao: HidratacaoDiaria;
   conquistas: Conquista[];
   colors: AppColors;
+  definirPaletaTemporaria: (paletaAcessibilidade: PaletaAcessibilidadeId) => void;
   login: (email: string, senha: string) => Promise<void>;
+  cadastrar: (dados: CadastroDados) => Promise<void>;
   atualizarPerfil: (dados: AtualizarPerfilDados) => Promise<void>;
   atualizarPaletaAcessibilidade: (paletaAcessibilidade: PaletaAcessibilidadeId) => Promise<void>;
   completarMissao: (id: string) => void;
+  removerMissao: (id: string) => Promise<void>;
+  atualizarDuracaoMissao: (id: string, duracaoMinutos: number) => Promise<void>;
+  confirmarHabitos: () => Promise<void>;
+  escolherAvatar: (avatarId: string) => Promise<void>;
   adicionarMissao: (missao: NovaMissaoDados) => Promise<void>;
   selecionarMedidaAgua: (medidaMl: number) => Promise<void>;
   registrarAguaBebida: (metaMl: number) => Promise<HidratacaoDiaria>;
@@ -119,8 +125,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [missoes, setMissoes] = useState<Missao[]>(MISSOES);
   const [hidratacao, setHidratacao] = useState<HidratacaoDiaria>(hidratacaoPadrao);
+  const [paletaTemporaria, setPaletaTemporaria] = useState<PaletaAcessibilidadeId>(PALETA_PADRAO);
   const conquistas = montarConquistas(usuario, missoes);
-  const paletaAtual = usuario?.preferencias.paletaAcessibilidade ?? PALETA_PADRAO;
+  const paletaAtual = usuario?.preferencias.paletaAcessibilidade ?? paletaTemporaria;
   const colors = Colors[paletaAtual] ?? Colors[PALETA_PADRAO];
 
   useEffect(() => {
@@ -133,6 +140,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             conquistas: user.conquistas ?? [],
             diasPerfeitos: user.diasPerfeitos ?? 0,
             onboardingCompleto: user.onboardingCompleto ?? false,
+            habitosConfirmados: user.habitosConfirmados ?? user.onboardingCompleto ?? false,
             preferencias: {
               ...PREFERENCIAS_PADRAO,
               ...user.preferencias,
@@ -168,14 +176,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
       moedas: 0,
       streak: 0,
       areaDominante: CategoriaMissao.Mental,
-      onboardingCompleto: false,
+      onboardingCompleto: true,
+      habitosConfirmados: true,
+      avatarId: "avatar-1",
+      perfil: {
+        foco: CategoriaMissao.Mental,
+        tempoDiario: 15,
+        nivelAtual: "iniciante",
+      },
       preferencias: { ...PREFERENCIAS_PADRAO },
       conquistas: [],
       diasPerfeitos: 0,
     };
 
     setUsuario(user);
+    setPaletaTemporaria(PALETA_PADRAO);
     await salvar("user", user);
+  }
+
+  async function cadastrar(dados: CadastroDados) {
+    const nomeLimpo = dados.nome.trim();
+    const emailNormalizado = dados.email.trim().toLowerCase();
+
+    if (nomeLimpo.length < 2) throw new Error("Informe um nome com pelo menos 2 caracteres.");
+    if (!emailNormalizado.includes("@")) throw new Error("Email inválido.");
+    if (dados.senha.length < 6) throw new Error("A senha precisa ter pelo menos 6 caracteres.");
+
+    const perfil: OnboardingPerfil = {
+      foco: dados.foco,
+      tempoDiario: dados.tempoDiario,
+      nivelAtual: "iniciante",
+      atividadesSelecionadas: dados.atividadesSelecionadas,
+    };
+    const plano = gerarMissoesPersonalizadas(dados.foco, dados.tempoDiario, dados.atividadesSelecionadas);
+    const user: Usuario = {
+      id: emailNormalizado,
+      nome: nomeLimpo,
+      email: emailNormalizado,
+      nivel: 1,
+      xp: 0,
+      moedas: 0,
+      streak: 0,
+      areaDominante: dados.foco,
+      onboardingCompleto: false,
+      habitosConfirmados: false,
+      perfil,
+      preferencias: {
+        ...PREFERENCIAS_PADRAO,
+        paletaAcessibilidade: dados.paletaAcessibilidade,
+      },
+      conquistas: [],
+      diasPerfeitos: 0,
+    };
+
+    setUsuario(user);
+    setPaletaTemporaria(dados.paletaAcessibilidade);
+    setMissoes(plano);
+    await salvar("user", user);
+    await salvar("missoes", plano);
   }
 
   async function atualizarPerfil(dados: AtualizarPerfilDados) {
@@ -184,12 +242,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const usuarioAtualizado: Usuario = {
       ...usuario,
       nome: dados.nome,
+      email: dados.email?.trim().toLowerCase() ?? usuario.email,
       areaDominante: dados.areaDominante,
       preferencias: dados.preferencias,
       perfil: usuario.perfil
         ? {
             ...usuario.perfil,
             foco: dados.areaDominante,
+            tempoDiario: dados.tempoDiario ?? usuario.perfil.tempoDiario,
           }
         : usuario.perfil,
     };
@@ -213,6 +273,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await salvar("user", usuarioAtualizado);
   }
 
+  function definirPaletaTemporaria(paletaAcessibilidade: PaletaAcessibilidadeId) {
+    setPaletaTemporaria(paletaAcessibilidade);
+  }
+
   async function concluirOnboarding(perfil: OnboardingPerfil) {
     if (!usuario) return;
 
@@ -221,6 +285,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...usuario,
       areaDominante: perfil.foco,
       onboardingCompleto: true,
+      habitosConfirmados: true,
+      avatarId: usuario.avatarId ?? "avatar-1",
       perfil,
     };
 
@@ -260,6 +326,55 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUsuario(usuarioAtualizado);
     salvar("missoes", novasMissoes);
     salvar("user", usuarioAtualizado);
+  }
+
+  async function removerMissao(id: string) {
+    const novasMissoes = missoes.filter((missao) => missao.id !== id);
+    setMissoes(novasMissoes);
+    await salvar("missoes", novasMissoes);
+  }
+
+  async function atualizarDuracaoMissao(id: string, duracaoMinutos: number) {
+    const duracaoSegura = Math.min(45, Math.max(5, Math.round(duracaoMinutos)));
+    const novasMissoes = missoes.map((missao) =>
+      missao.id === id
+        ? {
+            ...missao,
+            duracaoMinutos: duracaoSegura,
+            recompensaXp: Math.min(80, Math.max(15, duracaoSegura * 4)),
+            recompensaMoedas: Math.min(25, Math.max(4, Math.ceil(duracaoSegura / 2))),
+          }
+        : missao
+    );
+
+    setMissoes(novasMissoes);
+    await salvar("missoes", novasMissoes);
+  }
+
+  async function confirmarHabitos() {
+    if (!usuario) return;
+
+    const usuarioAtualizado: Usuario = {
+      ...usuario,
+      habitosConfirmados: true,
+    };
+
+    setUsuario(usuarioAtualizado);
+    await salvar("user", usuarioAtualizado);
+  }
+
+  async function escolherAvatar(avatarId: string) {
+    if (!usuario) return;
+
+    const usuarioAtualizado: Usuario = {
+      ...usuario,
+      avatarId,
+      onboardingCompleto: true,
+      habitosConfirmados: true,
+    };
+
+    setUsuario(usuarioAtualizado);
+    await salvar("user", usuarioAtualizado);
   }
 
   async function adicionarMissao(missao: NovaMissaoDados) {
@@ -325,6 +440,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     setUsuario(null);
+    setPaletaTemporaria(PALETA_PADRAO);
     setMissoes(MISSOES);
     setHidratacao(hidratacaoPadrao());
     await remover("user");
@@ -341,10 +457,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         hidratacao,
         conquistas,
         colors,
+        definirPaletaTemporaria,
         login,
+        cadastrar,
         atualizarPerfil,
         atualizarPaletaAcessibilidade,
         completarMissao,
+        removerMissao,
+        atualizarDuracaoMissao,
+        confirmarHabitos,
+        escolherAvatar,
         adicionarMissao,
         selecionarMedidaAgua,
         registrarAguaBebida,

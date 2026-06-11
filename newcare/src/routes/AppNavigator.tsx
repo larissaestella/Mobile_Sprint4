@@ -4,11 +4,16 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 
 import { LoginScreen } from "../screens/LoginScreen";
-import { OnboardingScreen } from "../screens/OnboardingScreen";
+import { CadastroScreen } from "../screens/CadastroScreen";
+import { PreviewHabitosScreen } from "../screens/PreviewHabitosScreen";
+import { EscolhaAvatarScreen } from "../screens/EscolhaAvatarScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { HabitosScreen } from "../screens/HabitosScreen";
 import { ProgressoScreen } from "../screens/ProgressoScreen";
 import { PerfilScreen } from "../screens/PerfilScreen";
+import { DetalheMissaoScreen } from "../screens/DetalheMissaoScreen";
+import { ConfiguracoesScreen } from "../screens/ConfiguracoesScreen";
+import { HidratacaoScreen } from "../screens/HidratacaoScreen";
 import { useApp } from "../context/AppContext";
 import { AppColors } from "../../constants/theme";
 import { MainTabParamList, RootStackParamList } from "./types";
@@ -22,6 +27,7 @@ function Tabs() {
 
   return (
     <Tab.Navigator
+      backBehavior="history"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
@@ -73,11 +79,21 @@ export function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!usuario ? (
-          <Stack.Screen name="Login" component={LoginScreen} />
-        ) : !usuario.onboardingCompleto ? (
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Cadastro" component={CadastroScreen} />
+          </>
+        ) : !usuario.habitosConfirmados ? (
+          <Stack.Screen name="PreviewHabitos" component={PreviewHabitosScreen} />
+        ) : !usuario.avatarId || !usuario.onboardingCompleto ? (
+          <Stack.Screen name="EscolhaAvatar" component={EscolhaAvatarScreen} />
         ) : (
-          <Stack.Screen name="Main" component={Tabs} />
+          <>
+            <Stack.Screen name="Main" component={Tabs} />
+            <Stack.Screen name="DetalheMissao" component={DetalheMissaoScreen} />
+            <Stack.Screen name="Configuracoes" component={ConfiguracoesScreen} />
+            <Stack.Screen name="Hidratacao" component={HidratacaoScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

@@ -22,6 +22,17 @@ export interface OnboardingPerfil {
   foco: CategoriaMissao;
   tempoDiario: number;
   nivelAtual: "iniciante" | "intermediario" | "avancado";
+  atividadesSelecionadas?: string[];
+}
+
+export interface CadastroDados {
+  nome: string;
+  email: string;
+  senha: string;
+  paletaAcessibilidade: PaletaAcessibilidadeId;
+  foco: CategoriaMissao;
+  tempoDiario: number;
+  atividadesSelecionadas: string[];
 }
 
 export interface PreferenciasUsuario {
@@ -33,7 +44,9 @@ export interface PreferenciasUsuario {
 
 export interface AtualizarPerfilDados {
   nome: string;
+  email?: string;
   areaDominante: CategoriaMissao;
+  tempoDiario?: number;
   preferencias: PreferenciasUsuario;
 }
 
@@ -47,6 +60,8 @@ export interface Usuario {
   streak: number;
   areaDominante: CategoriaMissao;
   onboardingCompleto: boolean;
+  habitosConfirmados?: boolean;
+  avatarId?: string;
   perfil?: OnboardingPerfil;
   preferencias: PreferenciasUsuario;
   conquistas: string[];

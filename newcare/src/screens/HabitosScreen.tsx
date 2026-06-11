@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { Alert, FlatList, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 import { CardMissao } from "../components/CardMissao";
 import { useApp } from "../context/AppContext";
 import { CategoriaMissao, StatusMissao, TipoMissao } from "../types";
 import { AppColors } from "../../constants/theme";
 import { Botao } from "../components/Botao";
 import { BrandHeader } from "../components/BrandHeader";
+import { RootStackParamList } from "../routes/types";
 
 const categorias = [
   { label: "Mental", valor: CategoriaMissao.Mental },
@@ -85,6 +88,7 @@ function diasDoMes(mesVisivel: Date) {
 export function HabitosScreen() {
   const { colors, missoes, completarMissao, adicionarMissao } = useApp();
   const styles = criarStyles(colors);
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [categoria, setCategoria] = useState(CategoriaMissao.Mental);
@@ -396,7 +400,11 @@ export function HabitosScreen() {
               {item.dataAgendada ? ` • ${formatarDataCurta(item.dataAgendada)}` : ""}
               {item.horarioLembrete ? ` às ${item.horarioLembrete}` : ""}
             </Text>
-            <CardMissao missao={item} onPress={concluirMissao} />
+            <CardMissao
+              missao={item}
+              onPress={concluirMissao}
+              onDetalhes={(missaoId) => navigation.navigate("DetalheMissao", { missaoId })}
+            />
           </View>
         )}
         ListFooterComponent={
@@ -412,7 +420,11 @@ export function HabitosScreen() {
                     {item.dataAgendada ? ` • ${formatarDataCurta(item.dataAgendada)}` : ""}
                     {item.horarioLembrete ? ` às ${item.horarioLembrete}` : ""}
                   </Text>
-                  <CardMissao missao={item} onPress={concluirMissao} />
+                  <CardMissao
+                    missao={item}
+                    onPress={concluirMissao}
+                    onDetalhes={(missaoId) => navigation.navigate("DetalheMissao", { missaoId })}
+                  />
                 </View>
               ))
             )}

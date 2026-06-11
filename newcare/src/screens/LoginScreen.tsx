@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { View, TextInput, Alert, Text, StyleSheet, Image } from "react-native";
+import { StackScreenProps } from "@react-navigation/stack";
 import { useApp } from "../context/AppContext";
 import { Botao } from "../components/Botao";
 import { AppColors } from "../../constants/theme";
+import { RootStackParamList } from "../routes/types";
 
-export function LoginScreen() {
+type Props = StackScreenProps<RootStackParamList, "Login">;
+
+export function LoginScreen({ navigation }: Props) {
   const { colors, login } = useApp();
   const styles = criarStyles(colors);
 
@@ -54,6 +58,14 @@ export function LoginScreen() {
       />
 
       <Botao titulo="Entrar" onPress={entrar} carregando={carregando} />
+      <View style={styles.cadastroArea}>
+        <Text style={styles.cadastroTexto}>Ainda não personalizou o app?</Text>
+        <Botao
+          titulo="Não tenho cadastro"
+          onPress={() => navigation.navigate("Cadastro")}
+          variante="secundario"
+        />
+      </View>
     </View>
   );
 }
@@ -104,5 +116,15 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 1 },
+  },
+  cadastroArea: {
+    gap: 10,
+    marginTop: 18,
+  },
+  cadastroTexto: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "700",
+    textAlign: "center",
   },
 });
