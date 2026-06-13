@@ -5,6 +5,7 @@ import { Botao } from "../components/Botao";
 import { BrandHeader } from "../components/BrandHeader";
 import { useApp } from "../context/AppContext";
 import { AppColors, Colors, PaletaAcessibilidadeId, paletasAcessibilidade } from "../../constants/theme";
+import { emailValido, LIMITE_EMAIL, LIMITE_NOME, LIMITE_SENHA } from "../utils/validacoes";
 
 const niveisAtividade = [
   { label: "Baixo", valor: "baixo" },
@@ -44,7 +45,7 @@ export function ConfiguracoesScreen() {
   async function salvar() {
     if (!usuario) return;
 
-    if (!nome.trim() || !email.includes("@")) {
+    if (nome.trim().length < 2 || nome.trim().length > LIMITE_NOME || !emailValido(email)) {
       Alert.alert("Dados inválidos", "Informe nome e e-mail válidos.");
       return;
     }
@@ -109,9 +110,9 @@ export function ConfiguracoesScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.titulo}>Configurações</Text>
-        <TextInput style={styles.input} placeholder="Nome" placeholderTextColor={colors.muted} value={nome} onChangeText={setNome} />
-        <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-        <TextInput style={styles.input} placeholder="Nova senha" placeholderTextColor={colors.muted} value={senha} onChangeText={setSenha} secureTextEntry />
+        <TextInput style={styles.input} placeholder="Nome" placeholderTextColor={colors.muted} value={nome} onChangeText={setNome} maxLength={LIMITE_NOME} />
+        <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" maxLength={LIMITE_EMAIL} />
+        <TextInput style={styles.input} placeholder="Nova senha" placeholderTextColor={colors.muted} value={senha} onChangeText={setSenha} secureTextEntry maxLength={LIMITE_SENHA} />
 
         <Text style={styles.label}>Cor de acessibilidade</Text>
         <View style={styles.paletasGrid}>

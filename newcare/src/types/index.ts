@@ -33,6 +33,7 @@ export interface CadastroDados {
   foco: CategoriaMissao;
   tempoDiario: number;
   atividadesSelecionadas: string[];
+  missoesPersonalizadas?: Missao[];
 }
 
 export interface PreferenciasUsuario {

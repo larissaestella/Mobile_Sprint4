@@ -6,20 +6,22 @@ interface Props {
   titulo: string;
   onPress: () => void;
   carregando?: boolean;
+  disabled?: boolean;
   variante?: "primario" | "secundario";
 }
 
-export function Botao({ titulo, onPress, carregando = false, variante = "primario" }: Props) {
+export function Botao({ titulo, onPress, carregando = false, disabled = false, variante = "primario" }: Props) {
   const { colors } = useApp();
   const styles = criarStyles(colors);
+  const bloqueado = carregando || disabled;
 
   return (
     <TouchableOpacity
-      style={[styles.btn, variante === "secundario" && styles.secundario]}
+      style={[styles.btn, variante === "secundario" && styles.secundario, bloqueado && styles.bloqueado]}
       onPress={onPress}
-      disabled={carregando}
+      disabled={bloqueado}
     >
-      {carregando ? <ActivityIndicator color="#fff" /> : <Text style={styles.text}>{titulo}</Text>}
+      {carregando ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.text}>{titulo}</Text>}
     </TouchableOpacity>
   );
 }
@@ -42,8 +44,11 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
     backgroundColor: colors.secondary,
     shadowColor: colors.secondary,
   },
+  bloqueado: {
+    opacity: 0.45,
+  },
   text: {
-    color: "#fff",
+    color: colors.surface,
     textAlign: "center",
     fontWeight: "800",
   },

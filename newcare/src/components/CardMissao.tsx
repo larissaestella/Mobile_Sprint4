@@ -109,7 +109,7 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
     backgroundColor: colors.success,
   },
   botaoTexto: {
-    color: "#fff",
+    color: colors.surface,
     textAlign: "center",
     fontWeight: "700",
   },

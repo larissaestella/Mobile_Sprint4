@@ -3,6 +3,7 @@ import { MISSOES, gerarMissoesPersonalizadas } from "../data/missoes";
 import { AtualizarPerfilDados, CadastroDados, CategoriaMissao, Conquista, DadosSaudeHidratacao, HidratacaoDiaria, Missao, NovaMissaoDados, OnboardingPerfil, PreferenciasUsuario, StatusMissao, TipoMissao, Usuario } from "../types";
 import { buscar, remover, salvar } from "../services/storage";
 import { Colors, PALETA_PADRAO, PaletaAcessibilidadeId, AppColors } from "../../constants/theme";
+import { emailValido } from "../utils/validacoes";
 
 interface ContextData {
   carregandoInicial: boolean;
@@ -168,7 +169,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   async function login(email: string, senha: string) {
     const emailNormalizado = email.trim().toLowerCase();
 
-    if (!emailNormalizado.includes("@")) throw new Error("Email inválido");
+    if (!emailValido(emailNormalizado)) throw new Error("Email inválido");
     if (senha.length < 6) throw new Error("Senha curta");
 
     const user: Usuario = {
@@ -203,7 +204,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const emailNormalizado = dados.email.trim().toLowerCase();
 
     if (nomeLimpo.length < 2) throw new Error("Informe um nome com pelo menos 2 caracteres.");
-    if (!emailNormalizado.includes("@")) throw new Error("Email inválido.");
+    if (!emailValido(emailNormalizado)) throw new Error("Email inválido.");
     if (dados.senha.length < 6) throw new Error("A senha precisa ter pelo menos 6 caracteres.");
 
     const perfil: OnboardingPerfil = {
@@ -212,7 +213,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       nivelAtual: "iniciante",
       atividadesSelecionadas: dados.atividadesSelecionadas,
     };
-    const plano = gerarMissoesPersonalizadas(dados.foco, dados.tempoDiario, dados.atividadesSelecionadas);
+    const plano = dados.missoesPersonalizadas ?? gerarMissoesPersonalizadas(dados.foco, dados.tempoDiario, dados.atividadesSelecionadas);
     const user: Usuario = {
       id: emailNormalizado,
       nome: nomeLimpo,
@@ -223,7 +224,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       streak: 0,
       areaDominante: dados.foco,
       onboardingCompleto: false,
-      habitosConfirmados: false,
+      habitosConfirmados: true,
       perfil,
       preferencias: {
         ...PREFERENCIAS_PADRAO,

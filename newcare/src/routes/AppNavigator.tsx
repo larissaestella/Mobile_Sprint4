@@ -1,4 +1,4 @@
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, Theme } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,6 +21,20 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
+function corEscura(hex: string) {
+  const limpa = hex.replace("#", "");
+  const valor = limpa.length === 3
+    ? limpa.split("").map((parte) => parte + parte).join("")
+    : limpa;
+  const numero = Number.parseInt(valor, 16);
+  const r = (numero >> 16) & 255;
+  const g = (numero >> 8) & 255;
+  const b = numero & 255;
+  const brilho = (r * 299 + g * 587 + b * 114) / 1000;
+
+  return brilho < 140;
+}
 
 function Tabs() {
   const { colors } = useApp();
@@ -65,6 +79,23 @@ function Tabs() {
 export function AppNavigator() {
   const { carregandoInicial, colors, usuario } = useApp();
   const styles = criarStyles(colors);
+  const navigationTheme: Theme = {
+    dark: corEscura(colors.background),
+    colors: {
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.text,
+      border: colors.border,
+      notification: colors.accent,
+    },
+    fonts: {
+      regular: { fontFamily: "System", fontWeight: "400" },
+      medium: { fontFamily: "System", fontWeight: "500" },
+      bold: { fontFamily: "System", fontWeight: "700" },
+      heavy: { fontFamily: "System", fontWeight: "900" },
+    },
+  };
 
   if (carregandoInicial) {
     return (
@@ -76,7 +107,7 @@ export function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!usuario ? (
           <>

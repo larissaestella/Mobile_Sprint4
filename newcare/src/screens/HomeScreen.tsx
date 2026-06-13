@@ -267,7 +267,7 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
   barra: {
     height: 9,
     borderRadius: 999,
-    backgroundColor: "#174A6B",
+    backgroundColor: colors.primarySoft,
     marginTop: 16,
     overflow: "hidden",
   },

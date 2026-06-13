@@ -686,7 +686,7 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
     color: colors.secondary,
   },
   calendarioDiaTextoSelecionado: {
-    color: "#fff",
+    color: colors.surface,
   },
   atalhosData: {
     flexDirection: "row",

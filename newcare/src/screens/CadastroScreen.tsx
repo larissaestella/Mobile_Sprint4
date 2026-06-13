@@ -5,21 +5,22 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Botao } from "../components/Botao";
 import { BrandHeader } from "../components/BrandHeader";
 import { useApp } from "../context/AppContext";
-import { CategoriaMissao } from "../types";
+import { CategoriaMissao, Missao } from "../types";
 import { AppColors, Colors, PaletaAcessibilidadeId, paletasAcessibilidade } from "../../constants/theme";
 import { RootStackParamList } from "../routes/types";
-import { ATIVIDADES_ONBOARDING } from "../data/missoes";
+import { ATIVIDADES_ONBOARDING, gerarMissoesPersonalizadas } from "../data/missoes";
+import { emailValido, LIMITE_EMAIL, LIMITE_NOME, LIMITE_SENHA } from "../utils/validacoes";
 
 type Props = StackScreenProps<RootStackParamList, "Cadastro">;
 
 const areas = [
-  { label: "Mental", valor: CategoriaMissao.Mental },
   { label: "Física", valor: CategoriaMissao.Fisica },
+  { label: "Mental", valor: CategoriaMissao.Mental },
   { label: "Lazer", valor: CategoriaMissao.Lazer },
   { label: "Sono", valor: CategoriaMissao.Sono },
 ];
-const tempos = [10, 15, 30];
-const etapas = ["Acessibilidade", "Conta", "Área", "Tempo"];
+const TEMPO_DIARIO_PADRAO = 15;
+const etapas = ["Acessibilidade", "Conta", "Área", "Hábitos", "Resumo"];
 
 export function CadastroScreen({ navigation }: Props) {
   const { cadastrar, colors, definirPaletaTemporaria } = useApp();
@@ -28,20 +29,28 @@ export function CadastroScreen({ navigation }: Props) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmacao, setConfirmacao] = useState("");
+  const [editandoDados, setEditandoDados] = useState(false);
+  const [nomeEdicao, setNomeEdicao] = useState("");
+  const [emailEdicao, setEmailEdicao] = useState("");
   const [paleta, setPaleta] = useState<PaletaAcessibilidadeId>("auroraHealth");
-  const [foco, setFoco] = useState(CategoriaMissao.Mental);
+  const [foco, setFoco] = useState(CategoriaMissao.Fisica);
   const [atividadesPorArea, setAtividadesPorArea] = useState<Record<CategoriaMissao, string[]>>({
     [CategoriaMissao.Mental]: [],
     [CategoriaMissao.Fisica]: [],
     [CategoriaMissao.Lazer]: [],
     [CategoriaMissao.Sono]: [],
   });
-  const [tempoDiario, setTempoDiario] = useState(15);
+  const tempoDiario = TEMPO_DIARIO_PADRAO;
+  const [habitosPreview, setHabitosPreview] = useState<Missao[]>([]);
   const [carregando, setCarregando] = useState(false);
   const [etapaAtual, setEtapaAtual] = useState(0);
   const ultimaEtapa = etapaAtual === etapas.length - 1;
   const atividadesSelecionadas = atividadesPorArea[foco];
   const todasAtividadesSelecionadas = Object.values(atividadesPorArea).flat();
+  const indiceAreaAtual = areas.findIndex((area) => area.valor === foco);
+  const proximaArea = areas[indiceAreaAtual + 1];
+  const atividadesCompletas = areas.every((area) => atividadesPorArea[area.valor].length === 2);
+  const areaAtualCompleta = atividadesSelecionadas.length === 2;
 
   function selecionarPaleta(paletaAcessibilidade: PaletaAcessibilidadeId) {
     setPaleta(paletaAcessibilidade);
@@ -54,13 +63,23 @@ export function CadastroScreen({ navigation }: Props) {
       return false;
     }
 
-    if (!email.trim().includes("@")) {
+    if (nome.trim().length > LIMITE_NOME) {
+      Alert.alert("Nome inválido", `O nome deve ter no máximo ${LIMITE_NOME} caracteres.`);
+      return false;
+    }
+
+    if (!emailValido(email)) {
       Alert.alert("Email inválido", "Informe um email válido.");
       return false;
     }
 
     if (senha.length < 6) {
       Alert.alert("Senha curta", "A senha precisa ter pelo menos 6 caracteres.");
+      return false;
+    }
+
+    if (senha.length > LIMITE_SENHA) {
+      Alert.alert("Senha inválida", `A senha deve ter no máximo ${LIMITE_SENHA} caracteres.`);
       return false;
     }
 
@@ -74,8 +93,9 @@ export function CadastroScreen({ navigation }: Props) {
 
   function avancar() {
     if (etapaAtual === 1 && !validarConta()) return;
-    if (etapaAtual === 2 && atividadesSelecionadas.length !== 2) {
-      Alert.alert("Escolha 2 atividades", "Selecione duas atividades sugeridas para montar seus hábitos iniciais.");
+    if (etapaAtual === 2 && !avancarArea()) return;
+    if (etapaAtual === 3 && habitosPreview.length === 0) {
+      Alert.alert("Escolha pelo menos um hábito", "Mantenha ao menos um hábito para criar sua jornada.");
       return;
     }
     if (ultimaEtapa) {
@@ -84,6 +104,26 @@ export function CadastroScreen({ navigation }: Props) {
     }
 
     setEtapaAtual((atual) => Math.min(atual + 1, etapas.length - 1));
+  }
+
+  function avancarArea() {
+    if (!areaAtualCompleta) {
+      Alert.alert("Complete a área", `Escolha 2 atividades de ${areas[indiceAreaAtual]?.label} para continuar.`);
+      return false;
+    }
+
+    if (proximaArea) {
+      setFoco(proximaArea.valor);
+      return false;
+    }
+
+    if (!atividadesCompletas) {
+      Alert.alert("Complete as atividades", "Revise as áreas anteriores e selecione 2 atividades em cada uma.");
+      return false;
+    }
+
+    setHabitosPreview(gerarMissoesPersonalizadas(foco, tempoDiario, todasAtividadesSelecionadas));
+    return true;
   }
 
   function voltar() {
@@ -96,7 +136,31 @@ export function CadastroScreen({ navigation }: Props) {
   }
 
   function escolherFoco(area: CategoriaMissao) {
+    const indiceArea = areas.findIndex((item) => item.valor === area);
+    const areaLiberada = indiceArea === 0 || atividadesPorArea[areas[indiceArea - 1].valor].length === 2;
+
+    if (!areaLiberada) {
+      Alert.alert("Área bloqueada", "Complete 2 atividades da área anterior para continuar.");
+      return;
+    }
+
     setFoco(area);
+  }
+
+  function areaLiberada(indice: number) {
+    return indice === 0 || atividadesPorArea[areas[indice - 1].valor].length === 2;
+  }
+
+  function mensagemFluxoAtividades() {
+    if (!areaAtualCompleta) {
+      return `Escolha 2 atividades de ${areas[indiceAreaAtual]?.label} para liberar a próxima área.`;
+    }
+
+    if (proximaArea) {
+      return `Pronto. ${proximaArea.label} foi liberada. Toque nela para escolher mais 2 itens.`;
+    }
+
+    return "Todas as áreas foram preenchidas. Agora você pode avançar para o resumo do cadastro.";
   }
 
   function alternarAtividade(atividadeId: string) {
@@ -121,6 +185,57 @@ export function CadastroScreen({ navigation }: Props) {
     }));
   }
 
+  function iniciarEdicaoDados() {
+    setNomeEdicao(nome);
+    setEmailEdicao(email);
+    setEditandoDados(true);
+  }
+
+  function salvarEdicaoDados() {
+    const nomeLimpo = nomeEdicao.trim();
+    const emailLimpo = emailEdicao.trim().toLowerCase();
+
+    if (nomeLimpo.length < 2) {
+      Alert.alert("Nome inválido", "Informe um nome com pelo menos 2 caracteres.");
+      return;
+    }
+
+    if (nomeLimpo.length > LIMITE_NOME) {
+      Alert.alert("Nome inválido", `O nome deve ter no máximo ${LIMITE_NOME} caracteres.`);
+      return;
+    }
+
+    if (!emailValido(emailLimpo)) {
+      Alert.alert("Email inválido", "Informe um email válido.");
+      return;
+    }
+
+    setNome(nomeLimpo);
+    setEmail(emailLimpo);
+    setEditandoDados(false);
+  }
+
+  function removerHabito(id: string) {
+    setHabitosPreview((atuais) => atuais.filter((missao) => missao.id !== id));
+  }
+
+  function atualizarDuracaoHabito(id: string, duracaoMinutos: number) {
+    const duracaoSegura = Math.min(45, Math.max(5, Math.round(duracaoMinutos)));
+
+    setHabitosPreview((atuais) =>
+      atuais.map((missao) =>
+        missao.id === id
+          ? {
+              ...missao,
+              duracaoMinutos: duracaoSegura,
+              recompensaXp: Math.min(80, Math.max(15, duracaoSegura * 4)),
+              recompensaMoedas: Math.min(25, Math.max(4, Math.ceil(duracaoSegura / 2))),
+            }
+          : missao
+      )
+    );
+  }
+
   async function criarConta() {
     if (!validarConta()) return;
 
@@ -134,6 +249,7 @@ export function CadastroScreen({ navigation }: Props) {
         foco,
         tempoDiario,
         atividadesSelecionadas: todasAtividadesSelecionadas,
+        missoesPersonalizadas: habitosPreview,
       });
     } catch (error) {
       const mensagem = error instanceof Error ? error.message : "Revise os dados e tente novamente.";
@@ -155,7 +271,12 @@ export function CadastroScreen({ navigation }: Props) {
           ))}
         </View>
 
-        <ScrollView style={styles.etapa} contentContainerStyle={styles.etapaConteudo} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.etapa}
+          contentContainerStyle={[styles.etapaConteudo, etapaAtual === 2 && styles.etapaConteudoAtividades]}
+          scrollEnabled={etapaAtual !== 2}
+          showsVerticalScrollIndicator={false}
+        >
           {etapaAtual === 0 && (
             <View>
               <Text style={styles.label}>Cor de acessibilidade</Text>
@@ -183,26 +304,47 @@ export function CadastroScreen({ navigation }: Props) {
           {etapaAtual === 1 && (
             <View style={styles.card}>
               <Text style={styles.label}>Dados da conta</Text>
-              <TextInput style={styles.input} placeholder="Nome" placeholderTextColor={colors.muted} value={nome} onChangeText={setNome} />
-              <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-              <TextInput style={styles.input} placeholder="Senha" placeholderTextColor={colors.muted} value={senha} onChangeText={setSenha} secureTextEntry />
-              <TextInput style={styles.input} placeholder="Confirmar senha" placeholderTextColor={colors.muted} value={confirmacao} onChangeText={setConfirmacao} secureTextEntry />
+              <TextInput style={styles.input} placeholder="Nome" placeholderTextColor={colors.muted} value={nome} onChangeText={setNome} maxLength={LIMITE_NOME} />
+              <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={LIMITE_EMAIL} />
+              <TextInput style={styles.input} placeholder="Senha" placeholderTextColor={colors.muted} value={senha} onChangeText={setSenha} secureTextEntry maxLength={LIMITE_SENHA} />
+              <TextInput style={styles.input} placeholder="Confirmar senha" placeholderTextColor={colors.muted} value={confirmacao} onChangeText={setConfirmacao} secureTextEntry maxLength={LIMITE_SENHA} />
             </View>
           )}
 
           {etapaAtual === 2 && (
             <View>
               <Text style={styles.label}>Área que deseja aprimorar</Text>
-              <View style={styles.chips}>
-                {areas.map((area) => (
-                  <TouchableOpacity key={area.valor} style={[styles.chip, foco === area.valor && styles.chipAtivo]} onPress={() => escolherFoco(area.valor)}>
-                    <Text style={[styles.chipTexto, foco === area.valor && styles.chipTextoAtivo]}>{area.label}</Text>
-                  </TouchableOpacity>
-                ))}
+              <Text style={styles.descricaoEtapa}>Complete 2 itens para liberar a próxima área.</Text>
+              <View style={styles.areaGrid}>
+                {areas.map((area, index) => {
+                  const liberada = areaLiberada(index);
+                  const ativa = foco === area.valor;
+
+                  return (
+                    <TouchableOpacity
+                      key={area.valor}
+                      style={[
+                        styles.areaChip,
+                        ativa && styles.chipAtivo,
+                        !liberada && styles.areaChipBloqueada,
+                      ]}
+                      onPress={() => escolherFoco(area.valor)}
+                      disabled={!liberada}
+                    >
+                      <Text style={[
+                        styles.areaChipTexto,
+                        ativa && styles.chipTextoAtivo,
+                        !liberada && styles.areaChipTextoBloqueado,
+                      ]}>
+                        {area.label} {atividadesPorArea[area.valor].length}/2
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
-              <Text style={styles.subLabel}>Escolha 2 atividades sugeridas</Text>
-              <View style={styles.atividadesLista}>
+              <Text style={styles.subLabel}>Escolha 2 atividades de {areas[indiceAreaAtual]?.label}</Text>
+              <View style={styles.atividadesGrid}>
                 {ATIVIDADES_ONBOARDING[foco].map((atividade) => {
                   const ativa = atividadesSelecionadas.includes(atividade.id);
 
@@ -224,26 +366,77 @@ export function CadastroScreen({ navigation }: Props) {
                 })}
               </View>
               <Text style={styles.contadorAtividades}>{atividadesSelecionadas.length}/2 escolhidas</Text>
+              <Text style={styles.mensagemOrientacao}>{mensagemFluxoAtividades()}</Text>
             </View>
           )}
 
           {etapaAtual === 3 && (
             <View>
-              <Text style={styles.label}>Tempo diário</Text>
-              <View style={styles.chips}>
-                {tempos.map((tempo) => (
-                  <TouchableOpacity key={tempo} style={[styles.chip, tempoDiario === tempo && styles.chipAtivo]} onPress={() => setTempoDiario(tempo)}>
-                    <Text style={[styles.chipTexto, tempoDiario === tempo && styles.chipTextoAtivo]}>{tempo} min</Text>
-                  </TouchableOpacity>
+              <Text style={styles.label}>Pré-visualização dos hábitos</Text>
+              <Text style={styles.descricaoEtapa}>Essas missões serão criadas com base nas atividades escolhidas.</Text>
+              <View style={styles.habitosLista}>
+                {habitosPreview.map((missao) => (
+                  <View key={missao.id} style={styles.habitoResumoCard}>
+                    <View style={styles.habitoTopo}>
+                      <Text style={styles.habitoTitulo}>{missao.titulo}</Text>
+                      <TouchableOpacity style={styles.removerHabito} onPress={() => removerHabito(missao.id)}>
+                        <Text style={styles.removerHabitoTexto}>Remover</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={styles.habitoCategoria}>{missao.categoria}</Text>
+                    <Text style={styles.habitoDescricao}>{missao.descricao}</Text>
+                    <View style={styles.duracaoLinha}>
+                      <TouchableOpacity style={styles.stepper} onPress={() => atualizarDuracaoHabito(missao.id, missao.duracaoMinutos - 5)}>
+                        <Text style={styles.stepperTexto}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.duracao}>{missao.duracaoMinutos} min</Text>
+                      <TouchableOpacity style={styles.stepper} onPress={() => atualizarDuracaoHabito(missao.id, missao.duracaoMinutos + 5)}>
+                        <Text style={styles.stepperTexto}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={styles.habitoMeta}>{missao.recompensaXp} XP • {missao.recompensaMoedas} moedas</Text>
+                  </View>
                 ))}
               </View>
+            </View>
+          )}
 
+          {etapaAtual === 4 && (
+            <View>
+              <Text style={styles.label}>Resumo do cadastro</Text>
               <View style={styles.resumo}>
-                <Text style={styles.resumoTitulo}>Resumo do cadastro</Text>
-                <Text style={styles.resumoTexto}>{nome || "Seu nome"} • {email || "email"}</Text>
-                <Text style={styles.resumoTexto}>Área: {areas.find((area) => area.valor === foco)?.label}</Text>
-                <Text style={styles.resumoTexto}>Atividades escolhidas: {todasAtividadesSelecionadas.length}</Text>
-                <Text style={styles.resumoTexto}>Tempo diário: {tempoDiario} min</Text>
+                <View style={styles.resumoTopo}>
+                  <Text style={styles.resumoTitulo}>Confira seus dados</Text>
+                  {!editandoDados && (
+                    <TouchableOpacity style={styles.editarBotao} onPress={iniciarEdicaoDados}>
+                      <Text style={styles.editarBotaoTexto}>Editar</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                {editandoDados ? (
+                  <View style={styles.card}>
+                    <Text style={styles.labelCampo}>Nome</Text>
+                    <TextInput style={styles.input} placeholder="Nome" placeholderTextColor={colors.muted} value={nomeEdicao} onChangeText={setNomeEdicao} maxLength={LIMITE_NOME} />
+                    <Text style={styles.labelCampo}>E-mail</Text>
+                    <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={emailEdicao} onChangeText={setEmailEdicao} keyboardType="email-address" autoCapitalize="none" maxLength={LIMITE_EMAIL} />
+                    <Botao titulo="Salvar dados" onPress={salvarEdicaoDados} />
+                  </View>
+                ) : (
+                  <View style={styles.resumoDados}>
+                    <View style={styles.resumoLinha}>
+                      <Text style={styles.resumoLabel}>Nome</Text>
+                      <Text style={styles.resumoValor}>{nome || "Seu nome"}</Text>
+                    </View>
+                    <View style={styles.resumoLinha}>
+                      <Text style={styles.resumoLabel}>E-mail</Text>
+                      <Text style={styles.resumoValor}>{email || "email"}</Text>
+                    </View>
+                  </View>
+                )}
+                <View style={styles.resumoLinha}>
+                  <Text style={styles.resumoLabel}>Hábitos mantidos</Text>
+                  <Text style={styles.resumoValor}>{habitosPreview.length}</Text>
+                </View>
               </View>
             </View>
           )}
@@ -254,7 +447,11 @@ export function CadastroScreen({ navigation }: Props) {
             <Text style={styles.botaoVoltarTexto}>{etapaAtual === 0 ? "Login" : "Voltar"}</Text>
           </TouchableOpacity>
           <View style={styles.botaoAvancar}>
-            <Botao titulo={ultimaEtapa ? "Criar cadastro" : "Avançar"} onPress={avancar} carregando={carregando} />
+            <Botao
+              titulo={ultimaEtapa ? "Criar cadastro" : "Avançar"}
+              onPress={avancar}
+              carregando={carregando}
+            />
           </View>
         </View>
       </View>
@@ -272,11 +469,13 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
   progressoItemAtivo: { backgroundColor: colors.primary },
   etapa: { flex: 1 },
   etapaConteudo: { paddingBottom: 8 },
+  etapaConteudoAtividades: { flexGrow: 1, paddingBottom: 0 },
   card: { gap: 10, marginBottom: 18 },
   input: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 14, borderWidth: 1, color: colors.text, fontSize: 16, fontWeight: "700", minHeight: 50, paddingHorizontal: 14 },
+  labelCampo: { color: colors.text, fontSize: 13, fontWeight: "900", marginBottom: -4 },
   label: { color: colors.text, fontSize: 16, fontWeight: "900", marginBottom: 10, marginTop: 10 },
-  descricaoEtapa: { color: colors.muted, fontWeight: "700", lineHeight: 19, marginBottom: 12 },
-  subLabel: { color: colors.text, fontSize: 14, fontWeight: "900", marginBottom: 8, marginTop: 16 },
+  descricaoEtapa: { color: colors.muted, fontSize: 13, fontWeight: "700", lineHeight: 18, marginBottom: 10 },
+  subLabel: { color: colors.text, fontSize: 14, fontWeight: "900", marginBottom: 8, marginTop: 14 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "space-between", marginBottom: 8 },
   opcao: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 12, borderWidth: 1, minHeight: 102, padding: 12, width: "48%" },
   opcaoAtiva: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
@@ -289,18 +488,44 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
   chipAtivo: { backgroundColor: colors.secondarySoft, borderColor: colors.secondary },
   chipTexto: { color: colors.muted, fontWeight: "900", textAlign: "center" },
   chipTextoAtivo: { color: colors.secondary },
-  atividadesLista: { gap: 8 },
-  atividadeCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 12, borderWidth: 1, padding: 12 },
+  areaGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
+  areaChip: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 999, borderWidth: 1, minHeight: 36, justifyContent: "center", paddingHorizontal: 10, width: "48%" },
+  areaChipBloqueada: { opacity: 0.35 },
+  areaChipTexto: { color: colors.muted, fontSize: 13, fontWeight: "900", textAlign: "center" },
+  areaChipTextoBloqueado: { color: colors.muted },
+  atividadesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  atividadeCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 12, borderWidth: 1, minHeight: 90, padding: 10, width: "48%" },
   atividadeCardAtiva: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  atividadeTopo: { alignItems: "flex-start", flexDirection: "row", gap: 10, justifyContent: "space-between" },
-  atividadeTitulo: { color: colors.text, flex: 1, fontSize: 14, fontWeight: "900" },
-  atividadeBadge: { backgroundColor: colors.card, borderRadius: 999, color: colors.muted, fontSize: 11, fontWeight: "900", overflow: "hidden", paddingHorizontal: 8, paddingVertical: 4 },
+  atividadeTopo: { gap: 6 },
+  atividadeTitulo: { color: colors.text, fontSize: 13, fontWeight: "900" },
+  atividadeBadge: { alignSelf: "flex-start", backgroundColor: colors.card, borderRadius: 999, color: colors.muted, fontSize: 10, fontWeight: "900", overflow: "hidden", paddingHorizontal: 7, paddingVertical: 3 },
   atividadeBadgeAtiva: { backgroundColor: colors.primary, color: colors.surface },
-  atividadeDescricao: { color: colors.muted, fontSize: 12, fontWeight: "700", lineHeight: 16, marginTop: 6 },
-  contadorAtividades: { color: colors.primary, fontSize: 12, fontWeight: "900", marginTop: 8, textAlign: "right" },
+  atividadeDescricao: { color: colors.muted, fontSize: 11, fontWeight: "700", lineHeight: 14, marginTop: 5 },
+  contadorAtividades: { color: colors.primary, fontSize: 12, fontWeight: "900", marginTop: 6, textAlign: "right" },
+  mensagemOrientacao: { backgroundColor: colors.primarySoft, borderRadius: 10, color: colors.primary, fontSize: 12, fontWeight: "900", lineHeight: 16, marginTop: 6, padding: 8 },
+  habitosLista: { gap: 8 },
+  habitoResumoCard: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 12, borderWidth: 1, padding: 12 },
+  habitoTopo: { alignItems: "flex-start", flexDirection: "row", gap: 10, justifyContent: "space-between" },
+  habitoTitulo: { color: colors.text, flex: 1, fontSize: 14, fontWeight: "900" },
+  habitoCategoria: { color: colors.primary, fontSize: 11, fontWeight: "900", textTransform: "capitalize" },
+  habitoDescricao: { color: colors.muted, fontSize: 12, fontWeight: "700", lineHeight: 16, marginTop: 6 },
+  habitoMeta: { color: colors.secondary, fontSize: 12, fontWeight: "900", marginTop: 8 },
+  removerHabito: { backgroundColor: colors.warningSoft, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
+  removerHabitoTexto: { color: colors.warning, fontSize: 11, fontWeight: "900" },
+  duracaoLinha: { alignItems: "center", flexDirection: "row", gap: 12, marginTop: 10 },
+  stepper: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: 999, height: 30, justifyContent: "center", width: 30 },
+  stepperTexto: { color: colors.primary, fontSize: 18, fontWeight: "900", lineHeight: 20 },
+  duracao: { color: colors.text, fontSize: 14, fontWeight: "900", minWidth: 58, textAlign: "center" },
   resumo: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 14, borderWidth: 1, marginTop: 18, padding: 14 },
+  resumoTopo: { alignItems: "center", flexDirection: "row", gap: 12, justifyContent: "space-between", marginBottom: 4 },
   resumoTitulo: { color: colors.text, fontSize: 16, fontWeight: "900", marginBottom: 8 },
   resumoTexto: { color: colors.muted, fontWeight: "800", marginTop: 4 },
+  resumoDados: { gap: 8 },
+  resumoLinha: { backgroundColor: colors.background, borderColor: colors.border, borderRadius: 10, borderWidth: 1, marginTop: 8, padding: 10 },
+  resumoLabel: { color: colors.muted, fontSize: 11, fontWeight: "900", marginBottom: 3, textTransform: "uppercase" },
+  resumoValor: { color: colors.text, fontSize: 15, fontWeight: "900" },
+  editarBotao: { backgroundColor: colors.primarySoft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  editarBotaoTexto: { color: colors.primary, fontSize: 12, fontWeight: "900" },
   navegacao: { alignItems: "center", flexDirection: "row", gap: 12, paddingTop: 12 },
   botaoVoltar: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 14, borderWidth: 1, justifyContent: "center", minHeight: 50, paddingHorizontal: 18 },
   botaoVoltarTexto: { color: colors.text, fontWeight: "900" },

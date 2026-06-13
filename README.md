@@ -32,8 +32,8 @@ Após o login, o usuário passa por um onboarding simples, informa sua área de 
 2. **Clone o repositório:**
 
    ```bash
-   git clone https://github.com/jefbiel/NewCare_Sprint3.git
-   cd NewCare_Sprint3/newcare
+   git clone https://github.com/jefbiel/Mobile_Sprint4.git
+   cd Mobile_Sprint4/newcare
    ```
 
 3. **Instale as dependências do projeto:**
@@ -122,6 +122,24 @@ As imagens do app ficam em [`newcare/docs/screenshots`](newcare/docs/screenshots
 - Integração IoT simulada por tópicos de sensor, com temperatura, umidade e status exibidos automaticamente na interface.
 - Uso de geolocalização nativa via Expo Location, com solicitação de permissão e tratamento de recusa.
 
+## Persistência Local
+
+O app usa `@react-native-async-storage/async-storage` em `src/services/storage.ts` para salvar dados relevantes do usuário no próprio dispositivo. O contexto principal (`src/context/AppContext.tsx`) restaura esses dados na inicialização do app e mantém uma tela de carregamento enquanto a sessão, as missões e os dados de hidratação são recuperados.
+
+Dados persistidos:
+
+- Sessão e perfil do usuário: chave `user`.
+- Missões personalizadas e progresso: chave `missoes`.
+- Meta, medida padrão e consumo diário de água: chave `hidratacao`.
+
+Como validar:
+
+1. Rode o app com Expo.
+2. Faça login ou cadastro.
+3. Conclua uma missão, altere uma preferência ou registre consumo de água.
+4. Feche o app completamente e abra novamente.
+5. Confira se a sessão continua ativa e se o progresso salvo permanece na interface.
+
 ## Sprint 4: Tempo real, nativo e IoT
 
 A Sprint 4 adiciona uma área de hidratação inteligente na aba Início. O app recebe leituras IoT de temperatura em tempo real, calcula a quantidade recomendada de água e permite registrar a localização do usuário com permissão nativa.
@@ -132,8 +150,9 @@ Logo abaixo da calculadora há um medidor diário de água. O usuário escolhe a
 
 - Protocolo usado: Socket.IO.
 - Funções principais no app:
-  - `conectarSocketIo`: abre a conexão, recebe `iot:leitura` e `agua:resultado`, e atualiza a UI.
+  - `conectarSocketIo`: abre a conexão na tela de Hidratação, recebe `iot:leitura` e `agua:resultado`, e atualiza a UI.
   - `publicarCalculoAguaIo`: emite `agua:calcular` para o servidor.
+  - `publicarConsumoAguaIo`: emite `agua:consumo` após o usuário registrar água.
 - Eventos implementados:
   - `iot:leitura`: servidor envia leituras de sensores para o app.
   - `agua:calcular`: app envia peso e temperatura.
@@ -147,7 +166,8 @@ Logo abaixo da calculadora há um medidor diário de água. O usuário escolhe a
 - Permissões configuradas:
   - Android: `ACCESS_COARSE_LOCATION` e `ACCESS_FINE_LOCATION`.
   - iOS: `NSLocationWhenInUseUsageDescription`.
-- Se o usuário recusar a permissão, a Home exibe o estado de recusa e mantém o cálculo funcionando com temperatura manual ou sensor IoT.
+- A tela de Hidratação solicita a permissão em runtime com `requestForegroundPermissionsAsync`.
+- Se o usuário recusar a permissão, a tela exibe o estado de recusa e mantém o cálculo funcionando com temperatura manual ou sensor IoT.
 
 ### Integração IoT
 
@@ -184,6 +204,16 @@ sensor/hidratacao/meta
 ```
 
 Ao bater a meta diária de água, o app concede 25 XP e 5 moedas uma única vez no dia.
+
+### Como validar tempo real, nativo e IoT
+
+1. Rode `npm run realtime` dentro da pasta `newcare`.
+2. Abra o app com `npx expo start -c`.
+3. Entre no app e abra a tela de Hidratação.
+4. Confira o status `tempo real`, temperatura, umidade e horário de atualização.
+5. Use `POST /api/publicar` para enviar uma nova temperatura e veja a interface mudar automaticamente.
+6. Toque em `Usar localização` e aceite ou recuse a permissão para validar os dois estados.
+7. Calcule a meta de água e registre consumo para emitir `agua:calcular` e `agua:consumo`.
 
 ### Como rodar a Sprint 4
 
