@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { StackScreenProps } from "@react-navigation/stack";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -25,7 +25,7 @@ const TEMPO_DIARIO_PADRAO = 15;
 const etapas = ["Acessibilidade", "Conta", "Área", "Hábitos", "Resumo"];
 
 export function CadastroScreen({ navigation }: Props) {
-  const { cadastrar, colors, definirPaletaTemporaria } = useApp();
+  const { cadastrar, colors, definirPaletaTemporaria, mostrarAlerta } = useApp();
   const styles = criarStyles(colors);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -46,6 +46,7 @@ export function CadastroScreen({ navigation }: Props) {
   const [habitosPreview, setHabitosPreview] = useState<Missao[]>([]);
   const [carregando, setCarregando] = useState(false);
   const [etapaAtual, setEtapaAtual] = useState(0);
+  const [tentouAvancar, setTentouAvancar] = useState(false);
   const ultimaEtapa = etapaAtual === etapas.length - 1;
   const atividadesSelecionadas = atividadesPorArea[foco];
   const todasAtividadesSelecionadas = Object.values(atividadesPorArea).flat();
@@ -60,33 +61,38 @@ export function CadastroScreen({ navigation }: Props) {
   }
 
   function validarConta() {
+    if (!nome.trim() || !email.trim() || !senha.trim() || !confirmacao.trim()) {
+      mostrarAlerta("erro", "Campos obrigatórios", "Preencha todos os campos para continuar.");
+      return false;
+    }
+
     if (nome.trim().length < 2) {
-      Alert.alert("Nome inválido", "Informe um nome com pelo menos 2 caracteres.");
+      mostrarAlerta("erro", "Nome inválido", "Informe um nome com pelo menos 2 caracteres.");
       return false;
     }
 
     if (nome.trim().length > LIMITE_NOME) {
-      Alert.alert("Nome inválido", `O nome deve ter no máximo ${LIMITE_NOME} caracteres.`);
+      mostrarAlerta("erro", "Nome inválido", `O nome deve ter no máximo ${LIMITE_NOME} caracteres.`);
       return false;
     }
 
     if (!emailValido(email)) {
-      Alert.alert("Email inválido", "Informe um email válido.");
+      mostrarAlerta("erro", "Email inválido", "Informe um email válido.");
       return false;
     }
 
     if (senha.length < 6) {
-      Alert.alert("Senha curta", "A senha precisa ter pelo menos 6 caracteres.");
+      mostrarAlerta("erro", "Senha curta", "A senha precisa ter pelo menos 6 caracteres.");
       return false;
     }
 
     if (senha.length > LIMITE_SENHA) {
-      Alert.alert("Senha inválida", `A senha deve ter no máximo ${LIMITE_SENHA} caracteres.`);
+      mostrarAlerta("erro", "Senha inválida", `A senha deve ter no máximo ${LIMITE_SENHA} caracteres.`);
       return false;
     }
 
     if (senha !== confirmacao) {
-      Alert.alert("Senhas diferentes", "Confirme a senha usando o mesmo valor.");
+      mostrarAlerta("erro", "Senhas diferentes", "Confirme a senha usando o mesmo valor.");
       return false;
     }
 
@@ -94,10 +100,11 @@ export function CadastroScreen({ navigation }: Props) {
   }
 
   function avancar() {
+    setTentouAvancar(true);
     if (etapaAtual === 1 && !validarConta()) return;
     if (etapaAtual === 2 && !avancarArea()) return;
     if (etapaAtual === 3 && habitosPreview.length === 0) {
-      Alert.alert("Escolha pelo menos um hábito", "Mantenha ao menos um hábito para criar sua jornada.");
+      mostrarAlerta("erro", "Escolha pelo menos um hábito", "Mantenha ao menos um hábito para criar sua jornada.");
       return;
     }
     if (ultimaEtapa) {
@@ -106,11 +113,12 @@ export function CadastroScreen({ navigation }: Props) {
     }
 
     setEtapaAtual((atual) => Math.min(atual + 1, etapas.length - 1));
+    setTentouAvancar(false);
   }
 
   function avancarArea() {
     if (!areaAtualCompleta) {
-      Alert.alert("Complete a área", `Escolha 2 atividades de ${areas[indiceAreaAtual]?.label} para continuar.`);
+      mostrarAlerta("info", "Complete a área", `Escolha 2 atividades de ${areas[indiceAreaAtual]?.label} para continuar.`);
       return false;
     }
 
@@ -120,7 +128,7 @@ export function CadastroScreen({ navigation }: Props) {
     }
 
     if (!atividadesCompletas) {
-      Alert.alert("Complete as atividades", "Revise as áreas anteriores e selecione 2 atividades em cada uma.");
+      mostrarAlerta("info", "Complete as atividades", "Revise as áreas anteriores e selecione 2 atividades em cada uma.");
       return false;
     }
 
@@ -142,7 +150,7 @@ export function CadastroScreen({ navigation }: Props) {
     const areaLiberada = indiceArea === 0 || atividadesPorArea[areas[indiceArea - 1].valor].length === 2;
 
     if (!areaLiberada) {
-      Alert.alert("Área bloqueada", "Complete 2 atividades da área anterior para continuar.");
+      mostrarAlerta("info", "Área bloqueada", "Complete 2 atividades da área anterior para continuar.");
       return;
     }
 
@@ -177,7 +185,7 @@ export function CadastroScreen({ navigation }: Props) {
     }
 
     if (atuais.length >= 2) {
-      Alert.alert("Limite de atividades", "Você pode escolher até 2 atividades sugeridas por área.");
+      mostrarAlerta("info", "Limite de atividades", "Você pode escolher até 2 atividades sugeridas por área.");
       return;
     }
 
@@ -198,17 +206,17 @@ export function CadastroScreen({ navigation }: Props) {
     const emailLimpo = emailEdicao.trim().toLowerCase();
 
     if (nomeLimpo.length < 2) {
-      Alert.alert("Nome inválido", "Informe um nome com pelo menos 2 caracteres.");
+      mostrarAlerta("erro", "Nome inválido", "Informe um nome com pelo menos 2 caracteres.");
       return;
     }
 
     if (nomeLimpo.length > LIMITE_NOME) {
-      Alert.alert("Nome inválido", `O nome deve ter no máximo ${LIMITE_NOME} caracteres.`);
+      mostrarAlerta("erro", "Nome inválido", `O nome deve ter no máximo ${LIMITE_NOME} caracteres.`);
       return;
     }
 
     if (!emailValido(emailLimpo)) {
-      Alert.alert("Email inválido", "Informe um email válido.");
+      mostrarAlerta("erro", "Email inválido", "Informe um email válido.");
       return;
     }
 
@@ -255,7 +263,7 @@ export function CadastroScreen({ navigation }: Props) {
       });
     } catch (error) {
       const mensagem = error instanceof Error ? error.message : "Revise os dados e tente novamente.";
-      Alert.alert("Não foi possível cadastrar", mensagem);
+      mostrarAlerta("erro", "Não foi possível cadastrar", mensagem);
     } finally {
       setCarregando(false);
     }
@@ -304,10 +312,14 @@ export function CadastroScreen({ navigation }: Props) {
           {etapaAtual === 1 && (
             <View style={styles.card}>
               <Text style={styles.label}>Dados da conta</Text>
-              <TextInput style={styles.input} placeholder="Nome" placeholderTextColor={colors.muted} value={nome} onChangeText={setNome} maxLength={LIMITE_NOME} />
-              <TextInput style={styles.input} placeholder="Email" placeholderTextColor={colors.muted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={LIMITE_EMAIL} />
-              <TextInput style={styles.input} placeholder="Senha" placeholderTextColor={colors.muted} value={senha} onChangeText={setSenha} secureTextEntry maxLength={LIMITE_SENHA} />
-              <TextInput style={styles.input} placeholder="Confirmar senha" placeholderTextColor={colors.muted} value={confirmacao} onChangeText={setConfirmacao} secureTextEntry maxLength={LIMITE_SENHA} />
+              <TextInput style={[styles.input, tentouAvancar && !nome.trim() && styles.inputErro]} placeholder="Nome *" placeholderTextColor={colors.muted} value={nome} onChangeText={setNome} maxLength={LIMITE_NOME} />
+              {tentouAvancar && !nome.trim() && <Text style={styles.erroTexto}>Nome é obrigatório</Text>}
+              <TextInput style={[styles.input, tentouAvancar && !email.trim() && styles.inputErro]} placeholder="Email *" placeholderTextColor={colors.muted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={LIMITE_EMAIL} />
+              {tentouAvancar && !email.trim() && <Text style={styles.erroTexto}>E-mail é obrigatório</Text>}
+              <TextInput style={[styles.input, tentouAvancar && !senha.trim() && styles.inputErro]} placeholder="Senha *" placeholderTextColor={colors.muted} value={senha} onChangeText={setSenha} secureTextEntry maxLength={LIMITE_SENHA} />
+              {tentouAvancar && !senha.trim() && <Text style={styles.erroTexto}>Senha é obrigatória</Text>}
+              <TextInput style={[styles.input, tentouAvancar && !confirmacao.trim() && styles.inputErro]} placeholder="Confirmar senha *" placeholderTextColor={colors.muted} value={confirmacao} onChangeText={setConfirmacao} secureTextEntry maxLength={LIMITE_SENHA} />
+              {tentouAvancar && !confirmacao.trim() && <Text style={styles.erroTexto}>Confirmação é obrigatória</Text>}
             </View>
           )}
 
@@ -530,4 +542,6 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
   botaoVoltar: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 14, borderWidth: 1, flexDirection: "row", gap: 4, justifyContent: "center", minHeight: 50, paddingHorizontal: 16 },
   botaoVoltarTexto: { color: colors.text, fontWeight: "900" },
   botaoAvancar: { flex: 1 },
+  inputErro: { borderColor: colors.danger ?? "#D6455D", borderWidth: 2 },
+  erroTexto: { color: colors.danger ?? "#D6455D", fontSize: 11, fontWeight: "800", marginTop: -4 },
 });

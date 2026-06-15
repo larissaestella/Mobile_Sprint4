@@ -41,7 +41,7 @@ export function BrandHeader({ compact = false, showBackButton = false, align = "
         </TouchableOpacity>
       )}
       <Image
-        source={require("../../assets/images/NewCareLogoHorizontal.png")}
+        source={require("../../assets/images/MapLogo.png")}
         style={[styles.logo, compact && styles.logoCompact]}
         resizeMode="contain"
       />
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   },
   logoCompact: {
     height: 34,
-    width: 175,
+    width: 65,
   },
   backButton: {
     alignItems: "center",

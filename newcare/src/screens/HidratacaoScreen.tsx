@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import * as Location from "expo-location";
@@ -62,6 +62,7 @@ export function HidratacaoScreen() {
   const {
     colors,
     hidratacao,
+    mostrarAlerta,
     registrarAguaBebida,
     salvarMetaHidratacao,
     selecionarMedidaAgua,
@@ -139,10 +140,7 @@ export function HidratacaoScreen() {
       resultado.ml + dados.adicionalAtividadeMl
     );
 
-    Alert.alert(
-      "Meta calculada em tempo real",
-      `O servidor definiu sua meta em ${((resultado.ml + dados.adicionalAtividadeMl) / 1000).toFixed(2)} L.`
-    );
+    mostrarAlerta("sucesso", "Meta calculada em tempo real", `O servidor definiu sua meta em ${((resultado.ml + dados.adicionalAtividadeMl) / 1000).toFixed(2)} L.`);
   }, [salvarMetaHidratacao]);
 
   useEffect(() => {
@@ -208,12 +206,12 @@ export function HidratacaoScreen() {
       calculada
     );
 
-    Alert.alert("Meta calculada", `Sua meta diária foi definida em ${(calculada / 1000).toFixed(2)} L.`);
+    mostrarAlerta("sucesso", "Meta calculada", `Sua meta diária foi definida em ${(calculada / 1000).toFixed(2)} L.`);
   }
 
   async function calcularESalvar() {
     if (!camposBasicosValidos()) {
-      Alert.alert("Complete seus dados", "Informe peso, altura e idade para calcular a meta de água.");
+      mostrarAlerta("erro", "Complete seus dados", "Informe peso, altura e idade para calcular a meta de água.");
       return;
     }
 
@@ -243,7 +241,7 @@ export function HidratacaoScreen() {
 
   async function registrar() {
     if (metaMl <= 0) {
-      Alert.alert("Informe seu peso", "O peso é necessário para calcular a meta diária.");
+      mostrarAlerta("erro", "Informe seu peso", "O peso é necessário para calcular a meta diária.");
       return;
     }
 
@@ -258,7 +256,7 @@ export function HidratacaoScreen() {
     });
 
     if (atualizada.metaBatida && !hidratacao.metaBatida) {
-      Alert.alert("Meta de água batida", "Você ganhou 25 XP e 5 moedas.");
+      mostrarAlerta("sucesso", "Meta de água batida", "Você ganhou 25 XP e 5 moedas.");
     }
   }
 

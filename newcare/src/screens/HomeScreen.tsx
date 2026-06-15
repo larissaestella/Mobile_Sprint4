@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { AppColors } from "../../constants/theme";
 import { useStyledFlatListRef } from "../components/AppScrollView";
 import { AvatarMapCard } from "../components/AvatarMapCard";
@@ -19,6 +19,7 @@ export function HomeScreen() {
     hidratacao,
     completarMissao,
     registrarAguaBebida,
+    mostrarAlerta,
   } = useApp();
   const styles = criarStyles(colors);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -38,7 +39,7 @@ export function HomeScreen() {
     const missao = missoes.find((item) => item.id === id);
     completarMissao(id);
     if (missao?.status === StatusMissao.Pendente) {
-      Alert.alert("Missão concluída", `Você ganhou ${missao.recompensaXp} XP.`);
+      mostrarAlerta("sucesso", "Missão concluída", `Você ganhou ${missao.recompensaXp} XP.`);
     }
   }
 
@@ -47,7 +48,7 @@ export function HomeScreen() {
 
     const atualizada = await registrarAguaBebida(metaAguaMl);
     if (!hidratacao.metaBatida && atualizada.metaBatida) {
-      Alert.alert("Meta de água concluída", "Você ganhou 25 XP e 5 moedas.");
+      mostrarAlerta("sucesso", "Meta de água concluída", "Você ganhou 25 XP e 5 moedas.");
     }
   }
 

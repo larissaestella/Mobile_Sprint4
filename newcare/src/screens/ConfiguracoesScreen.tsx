@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppScrollView } from "../components/AppScrollView";
 import { Botao } from "../components/Botao";
@@ -19,7 +19,7 @@ function numero(valor: string) {
 }
 
 export function ConfiguracoesScreen() {
-  const { atualizarPaletaAcessibilidade, atualizarPerfil, colors, hidratacao, logout, salvarMetaHidratacao, usuario } = useApp();
+  const { atualizarPaletaAcessibilidade, atualizarPerfil, colors, hidratacao, logout, mostrarAlerta, salvarMetaHidratacao, usuario } = useApp();
   const styles = criarStyles(colors);
   const [nome, setNome] = useState(usuario?.nome ?? "");
   const [email, setEmail] = useState(usuario?.email ?? "");
@@ -47,7 +47,7 @@ export function ConfiguracoesScreen() {
     if (!usuario) return;
 
     if (nome.trim().length < 2 || nome.trim().length > LIMITE_NOME || !emailValido(email)) {
-      Alert.alert("Dados inválidos", "Informe nome e e-mail válidos.");
+      mostrarAlerta("erro", "Dados inválidos", "Informe nome e e-mail válidos.");
       return;
     }
 
@@ -66,12 +66,12 @@ export function ConfiguracoesScreen() {
 
     if (querSalvarSaude) {
       if (!Number.isFinite(pesoKg) || pesoKg <= 0 || !Number.isFinite(alturaCm) || alturaCm <= 0 || !Number.isFinite(idadeAnos) || idadeAnos <= 0) {
-        Alert.alert("Preferências de saúde", "Informe peso, altura e idade válidos.");
+        mostrarAlerta("erro", "Preferências de saúde", "Informe peso, altura e idade válidos.");
         return;
       }
 
       if (!Number.isFinite(metaMl) || metaMl <= 0) {
-        Alert.alert("Meta de hidratação", "Informe uma meta de hidratação válida em ml.");
+        mostrarAlerta("erro", "Meta de hidratação", "Informe uma meta de hidratação válida em ml.");
         return;
       }
     }
@@ -101,7 +101,7 @@ export function ConfiguracoesScreen() {
       );
     }
 
-    Alert.alert("Configurações salvas", senha ? "Senha registrada para alteração futura." : "Preferências atualizadas.");
+    mostrarAlerta("sucesso", "Configurações salvas", senha ? "Senha registrada para alteração futura." : "Preferências atualizadas.");
   }
 
   return (

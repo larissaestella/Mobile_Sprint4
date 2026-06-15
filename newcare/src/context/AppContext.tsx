@@ -4,6 +4,7 @@ import { AtualizarPerfilDados, CadastroDados, CategoriaMissao, Conquista, DadosS
 import { buscar, remover, salvar } from "../services/storage";
 import { Colors, PALETA_PADRAO, PaletaAcessibilidadeId, AppColors } from "../../constants/theme";
 import { emailValido } from "../utils/validacoes";
+import { AlertaConfig, AlertaTipo, ALERTA_INICIAL } from "../components/AppAlert";
 
 interface ContextData {
   carregandoInicial: boolean;
@@ -12,6 +13,9 @@ interface ContextData {
   hidratacao: HidratacaoDiaria;
   conquistas: Conquista[];
   colors: AppColors;
+  alerta: AlertaConfig;
+  mostrarAlerta: (tipo: AlertaTipo, titulo: string, mensagem: string) => void;
+  fecharAlerta: () => void;
   definirPaletaTemporaria: (paletaAcessibilidade: PaletaAcessibilidadeId) => void;
   login: (email: string, senha: string) => Promise<void>;
   cadastrar: (dados: CadastroDados) => Promise<void>;
@@ -132,9 +136,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [missoes, setMissoes] = useState<Missao[]>(MISSOES);
   const [hidratacao, setHidratacao] = useState<HidratacaoDiaria>(hidratacaoPadrao);
   const [paletaTemporaria, setPaletaTemporaria] = useState<PaletaAcessibilidadeId>(PALETA_PADRAO);
+  const [alerta, setAlerta] = useState<AlertaConfig>(ALERTA_INICIAL);
   const conquistas = montarConquistas(usuario, missoes);
   const paletaAtual = usuario?.preferencias.paletaAcessibilidade ?? paletaTemporaria;
   const colors = Colors[paletaAtual] ?? Colors[PALETA_PADRAO];
+
+  function mostrarAlerta(tipo: AlertaTipo, titulo: string, mensagem: string) {
+    setAlerta({ visivel: true, tipo, titulo, mensagem });
+  }
+
+  function fecharAlerta() {
+    setAlerta(ALERTA_INICIAL);
+  }
 
   useEffect(() => {
     async function load() {
@@ -268,6 +281,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     setUsuario(usuarioAtualizado);
     await salvar("user", usuarioAtualizado);
+    mostrarAlerta("sucesso", "Configurações salvas", "Suas preferências foram atualizadas com sucesso.");
   }
 
   async function atualizarPaletaAcessibilidade(paletaAcessibilidade: PaletaAcessibilidadeId) {
@@ -321,14 +335,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const completouTudo = novasMissoes.every((m) => m.status === StatusMissao.Concluida);
     const bonusDiaPerfeito = completouTudo ? 50 : 0;
     const novoXp = usuario.xp + missao.recompensaXp + bonusDiaPerfeito;
+    const novoNivel = calcularNivel(novoXp);
     const conquistasDesbloqueadas = montarConquistas(usuario, novasMissoes)
       .filter((c) => c.desbloqueada)
       .map((c) => c.id);
+    const novasConquistas = conquistasDesbloqueadas.filter((c) => !usuario.conquistas.includes(c));
 
     const usuarioAtualizado: Usuario = {
       ...usuario,
       xp: novoXp,
-      nivel: calcularNivel(novoXp),
+      nivel: novoNivel,
       moedas: usuario.moedas + missao.recompensaMoedas + (completouTudo ? 10 : 0),
       streak: completouTudo ? usuario.streak + 1 : usuario.streak,
       diasPerfeitos: completouTudo ? usuario.diasPerfeitos + 1 : usuario.diasPerfeitos,
@@ -339,6 +355,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUsuario(usuarioAtualizado);
     salvar("missoes", novasMissoes);
     salvar("user", usuarioAtualizado);
+
+    if (novoNivel > usuario.nivel) {
+      mostrarAlerta("nivel", "Subiu de nível!", `Parabéns! Você alcançou o nível ${novoNivel}. Continue evoluindo!`);
+    } else if (novasConquistas.length > 0) {
+      const conquista = montarConquistas(usuarioAtualizado, novasMissoes).find((c) => c.id === novasConquistas[0]);
+      mostrarAlerta("conquista", "Conquista desbloqueada!", conquista?.titulo ?? "Nova conquista alcançada!");
+    } else {
+      mostrarAlerta("sucesso", "Missão concluída!", `+${missao.recompensaXp} XP e +${missao.recompensaMoedas} moedas.${completouTudo ? " Bônus de dia perfeito!" : ""}`);
+    }
   }
 
   async function removerMissao(id: string) {
@@ -415,6 +440,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const novasMissoes = [...missoes, novaMissao];
     setMissoes(novasMissoes);
     await salvar("missoes", novasMissoes);
+    mostrarAlerta("sucesso", "Missão adicionada!", `"${novaMissao.titulo}" foi incluída nas suas missões.`);
   }
 
   async function selecionarMedidaAgua(medidaMl: number) {
@@ -463,6 +489,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       setUsuario(usuarioAtualizado);
       await salvar("user", usuarioAtualizado);
+      mostrarAlerta("conquista", "Meta de água batida!", "Você ganhou +25 XP e +5 moedas. Continue se hidratando!");
     }
 
     setHidratacao(atualizada);
@@ -496,6 +523,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         hidratacao,
         conquistas,
         colors,
+        alerta,
+        mostrarAlerta,
+        fecharAlerta,
         definirPaletaTemporaria,
         login,
         cadastrar,

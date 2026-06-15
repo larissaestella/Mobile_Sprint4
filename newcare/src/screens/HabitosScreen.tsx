@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, FlatList, Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { FlatList, Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useStyledFlatListRef } from "../components/AppScrollView";
@@ -87,7 +87,7 @@ function diasDoMes(mesVisivel: Date) {
 }
 
 export function HabitosScreen() {
-  const { colors, missoes, completarMissao, adicionarMissao } = useApp();
+  const { colors, missoes, completarMissao, adicionarMissao, mostrarAlerta } = useApp();
   const styles = criarStyles(colors);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const flatListRef = useStyledFlatListRef();
@@ -115,22 +115,22 @@ export function HabitosScreen() {
     const duracaoMinutos = Number(duracao);
 
     if (!tituloLimpo || !descricaoLimpa) {
-      Alert.alert("Complete os campos", "Informe título e descrição da nova missão.");
+      mostrarAlerta("erro", "Complete os campos", "Informe título e descrição da nova missão.");
       return;
     }
 
     if (!Number.isFinite(duracaoMinutos) || duracaoMinutos < 1) {
-      Alert.alert("Duração inválida", "Informe uma duração de pelo menos 1 minuto.");
+      mostrarAlerta("erro", "Duração inválida", "Informe uma duração de pelo menos 1 minuto.");
       return;
     }
 
     if (!dataValida(dataAgendada)) {
-      Alert.alert("Data inválida", "Use o formato AAAA-MM-DD, por exemplo 2026-05-23.");
+      mostrarAlerta("erro", "Data inválida", "Use o formato AAAA-MM-DD, por exemplo 2026-05-23.");
       return;
     }
 
     if (lembreteAtivo && !horarioValido(horarioLembrete)) {
-      Alert.alert("Horário inválido", "Use o formato HH:MM, por exemplo 08:30.");
+      mostrarAlerta("erro", "Horário inválido", "Use o formato HH:MM, por exemplo 08:30.");
       return;
     }
 
@@ -154,7 +154,7 @@ export function HabitosScreen() {
     selecionarData(dataRelativa(0), false);
     setHorarioLembrete("08:00");
     setLembreteAtivo(true);
-    Alert.alert("Missão adicionada", "Sua nova missão entrou na lista de pendentes.");
+    mostrarAlerta("sucesso", "Missão adicionada", "Sua nova missão entrou na lista de pendentes.");
   }
 
   function selecionarData(dataISO: string, fecharCalendario = true) {
@@ -171,7 +171,7 @@ export function HabitosScreen() {
     const missao = missoes.find((item) => item.id === id);
     completarMissao(id);
     if (missao?.status === StatusMissao.Pendente) {
-      Alert.alert("Missão concluída", `Você ganhou ${missao.recompensaXp} XP.`);
+      mostrarAlerta("sucesso", "Missão concluída", `Você ganhou ${missao.recompensaXp} XP.`);
     }
   }
 

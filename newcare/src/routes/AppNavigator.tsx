@@ -3,6 +3,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 
+import { AppAlert } from "../components/AppAlert";
 import { LoginScreen } from "../screens/LoginScreen";
 import { CadastroScreen } from "../screens/CadastroScreen";
 import { PreviewHabitosScreen } from "../screens/PreviewHabitosScreen";
@@ -136,6 +137,7 @@ export function AppNavigator() {
           </>
         )}
       </Stack.Navigator>
+      <AppAlert />
     </NavigationContainer>
   );
 }

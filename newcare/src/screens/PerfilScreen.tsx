@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { AppColors } from "../../constants/theme";
 import { AppScrollView } from "../components/AppScrollView";
 import { Botao } from "../components/Botao";
@@ -12,7 +12,7 @@ import { RootStackParamList } from "../routes/types";
 import { StatusMissao } from "../types";
 
 export function PerfilScreen() {
-  const { colors, logout, missoes, resetarPlano, usuario } = useApp();
+  const { colors, logout, missoes, mostrarAlerta, resetarPlano, usuario } = useApp();
   const styles = criarStyles(colors);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const avatarAtual = obterAvatarPorNivel(usuario?.nivel ?? 1);
@@ -104,7 +104,7 @@ export function PerfilScreen() {
         variante="secundario"
         onPress={() => {
           resetarPlano();
-          Alert.alert("Plano resetado", "Suas missões voltaram para pendente.");
+          mostrarAlerta("sucesso", "Plano resetado", "Suas missões voltaram para pendente.");
         }}
       />
       <View style={styles.espaco} />

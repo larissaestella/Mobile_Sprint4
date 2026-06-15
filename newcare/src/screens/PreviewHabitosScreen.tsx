@@ -1,4 +1,4 @@
-import { Alert, FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useStyledFlatListRef } from "../components/AppScrollView";
 import { Botao } from "../components/Botao";
@@ -7,13 +7,13 @@ import { useApp } from "../context/AppContext";
 import { AppColors } from "../../constants/theme";
 
 export function PreviewHabitosScreen() {
-  const { atualizarDuracaoMissao, colors, confirmarHabitos, missoes, removerMissao } = useApp();
+  const { atualizarDuracaoMissao, colors, confirmarHabitos, missoes, mostrarAlerta, removerMissao } = useApp();
   const styles = criarStyles(colors);
   const flatListRef = useStyledFlatListRef();
 
   async function confirmar() {
     if (missoes.length === 0) {
-      Alert.alert("Escolha pelo menos um hábito", "Mantenha uma missão para começar sua jornada.");
+      mostrarAlerta("erro", "Escolha pelo menos um hábito", "Mantenha uma missão para começar sua jornada.");
       return;
     }
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Text, TouchableOpacity, StyleSheet, View } from "react-native";
+import { Text, TouchableOpacity, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppScrollView } from "../components/AppScrollView";
 import { Botao } from "../components/Botao";
@@ -26,7 +26,7 @@ const personalizacoesFuturas = [
 const etapas = ["Paleta", "Foco", "Rotina", "Resumo"];
 
 export function OnboardingScreen() {
-  const { colors, concluirOnboarding, atualizarPaletaAcessibilidade, usuario } = useApp();
+  const { colors, concluirOnboarding, atualizarPaletaAcessibilidade, mostrarAlerta, usuario } = useApp();
   const styles = criarStyles(colors);
   const [foco, setFoco] = useState(CategoriaMissao.Mental);
   const [tempoDiario, setTempoDiario] = useState(15);
@@ -47,7 +47,7 @@ export function OnboardingScreen() {
       setCarregando(true);
       await concluirOnboarding({ foco, tempoDiario, nivelAtual });
     } catch {
-      Alert.alert("Não foi possível gerar o plano", "Tente novamente em alguns instantes.");
+      mostrarAlerta("erro", "Não foi possível gerar o plano", "Tente novamente em alguns instantes.");
     } finally {
       setCarregando(false);
     }

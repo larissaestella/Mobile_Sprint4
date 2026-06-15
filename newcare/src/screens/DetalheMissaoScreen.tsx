@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { StackScreenProps } from "@react-navigation/stack";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,7 +12,7 @@ import { RootStackParamList } from "../routes/types";
 type Props = StackScreenProps<RootStackParamList, "DetalheMissao">;
 
 export function DetalheMissaoScreen({ navigation, route }: Props) {
-  const { colors, completarMissao, missoes } = useApp();
+  const { colors, completarMissao, missoes, mostrarAlerta } = useApp();
   const styles = criarStyles(colors);
   const missao = missoes.find((item) => item.id === route.params.missaoId);
 
@@ -30,7 +30,7 @@ export function DetalheMissaoScreen({ navigation, route }: Props) {
   function concluir() {
     if (!missao) return;
     completarMissao(missao.id);
-    Alert.alert("Missão concluída", `Você ganhou ${missao.recompensaXp} XP e ${missao.recompensaMoedas} moedas.`);
+    mostrarAlerta("sucesso", "Missão concluída", `Você ganhou ${missao.recompensaXp} XP e ${missao.recompensaMoedas} moedas.`);
     navigation.goBack();
   }
 

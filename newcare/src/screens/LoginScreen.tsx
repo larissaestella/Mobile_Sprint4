@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { StackScreenProps } from "@react-navigation/stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../context/AppContext";
@@ -11,20 +11,28 @@ import { RootStackParamList } from "../routes/types";
 type Props = StackScreenProps<RootStackParamList, "Login">;
 
 export function LoginScreen({ navigation }: Props) {
-  const { colors, login } = useApp();
+  const { colors, login, mostrarAlerta } = useApp();
   const styles = criarStyles(colors);
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [tentouEnviar, setTentouEnviar] = useState(false);
 
   async function entrar() {
+    setTentouEnviar(true);
+
+    if (!email.trim() || !senha.trim()) {
+      mostrarAlerta("erro", "Campos obrigatórios", "Preencha o e-mail e a senha para entrar.");
+      return;
+    }
+
     try {
       setCarregando(true);
       await login(email, senha);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Tente novamente em alguns instantes.";
-      Alert.alert("Não foi possível entrar", message);
+      mostrarAlerta("erro", "Não foi possível entrar", message);
     } finally {
       setCarregando(false);
     }
@@ -39,7 +47,7 @@ export function LoginScreen({ navigation }: Props) {
         <AppScrollView contentContainerStyle={styles.container}>
           <View style={styles.logoArea}>
             <Image
-              source={require("../../assets/images/NewCareLogo.png")}
+              source={require("../../assets/images/MapLogo.png")}
               style={styles.logoImage}
               resizeMode="contain"
             />
@@ -47,7 +55,7 @@ export function LoginScreen({ navigation }: Props) {
           <Text style={styles.subtitulo}>Evolua cuidando da sua saúde e bem-estar.</Text>
 
           <TextInput
-            style={styles.input}
+            style={[styles.input, tentouEnviar && !email.trim() && styles.inputErro]}
             placeholder="Email"
             placeholderTextColor={colors.muted}
             autoCapitalize="none"
@@ -55,14 +63,16 @@ export function LoginScreen({ navigation }: Props) {
             value={email}
             onChangeText={setEmail}
           />
+          {tentouEnviar && !email.trim() && <Text style={styles.erroTexto}>Informe seu e-mail</Text>}
           <TextInput
-            style={styles.input}
+            style={[styles.input, tentouEnviar && !senha.trim() && styles.inputErro]}
             placeholder="Senha"
             placeholderTextColor={colors.muted}
             secureTextEntry
             value={senha}
             onChangeText={setSenha}
           />
+          {tentouEnviar && !senha.trim() && <Text style={styles.erroTexto}>Informe sua senha</Text>}
 
           <Botao titulo="Entrar" onPress={entrar} carregando={carregando} />
           <View style={styles.cadastroArea}>
@@ -153,5 +163,16 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
     fontSize: 15,
     fontWeight: "900",
     textAlign: "center",
+  },
+  inputErro: {
+    borderColor: colors.danger ?? "#D6455D",
+    borderWidth: 2,
+  },
+  erroTexto: {
+    color: colors.danger ?? "#D6455D",
+    fontSize: 12,
+    fontWeight: "800",
+    marginBottom: 8,
+    marginTop: -8,
   },
 });
