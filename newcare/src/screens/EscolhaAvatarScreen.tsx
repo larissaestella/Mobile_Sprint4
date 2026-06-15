@@ -16,7 +16,7 @@ export function EscolhaAvatarScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <AppScrollView contentContainerStyle={styles.content}>
+      <AppScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <BrandHeader compact align="left" />
         <Text style={styles.titulo}>Conheça seu AvatarMAP</Text>
         <Text style={styles.subtitulo}>
@@ -81,6 +81,11 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
   container: {
     backgroundColor: colors.background,
     flex: 1,
+  },
+  scroll: {
+    flexBasis: 0,
+    flexGrow: 1,
+    flexShrink: 1,
     minHeight: 0,
   },
   content: {
