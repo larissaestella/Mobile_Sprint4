@@ -329,6 +329,7 @@ Verificar compatibilidade Expo:
 ```bash
 npx expo install --check
 ```
+<<<<<<< HEAD
 
 ## AvatarMAP — mascote gamificado
 
@@ -357,3 +358,5 @@ newcare/
   src/screens/
     AvatarMapScreen.tsx
 ```
+=======
+>>>>>>> 35c0a91afdab322e08324a38ad741700f41de452
