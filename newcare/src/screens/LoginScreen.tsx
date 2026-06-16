@@ -54,36 +54,38 @@ export function LoginScreen({ navigation }: Props) {
           </View>
           <Text style={styles.subtitulo}>Evolua cuidando da sua saúde e bem-estar.</Text>
 
-          <TextInput
-            style={[styles.input, tentouEnviar && !email.trim() && styles.inputErro]}
-            placeholder="Email"
-            placeholderTextColor={colors.muted}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-          />
-          {tentouEnviar && !email.trim() && <Text style={styles.erroTexto}>Informe seu e-mail</Text>}
-          <TextInput
-            style={[styles.input, tentouEnviar && !senha.trim() && styles.inputErro]}
-            placeholder="Senha"
-            placeholderTextColor={colors.muted}
-            secureTextEntry
-            value={senha}
-            onChangeText={setSenha}
-          />
-          {tentouEnviar && !senha.trim() && <Text style={styles.erroTexto}>Informe sua senha</Text>}
+          <View style={styles.formArea}>
+            <TextInput
+              style={[styles.input, tentouEnviar && !email.trim() && styles.inputErro]}
+              placeholder="Email"
+              placeholderTextColor={colors.muted}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
+            {tentouEnviar && !email.trim() && <Text style={styles.erroTexto}>Informe seu e-mail</Text>}
+            <TextInput
+              style={[styles.input, tentouEnviar && !senha.trim() && styles.inputErro]}
+              placeholder="Senha"
+              placeholderTextColor={colors.muted}
+              secureTextEntry
+              value={senha}
+              onChangeText={setSenha}
+            />
+            {tentouEnviar && !senha.trim() && <Text style={styles.erroTexto}>Informe sua senha</Text>}
 
-          <Botao titulo="Entrar" onPress={entrar} carregando={carregando} />
-          <View style={styles.cadastroArea}>
-            <Text style={styles.cadastroTexto}>Ainda não personalizou o app?</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate("Cadastro")}
-              accessibilityRole="button"
-              accessibilityLabel="Ir para o cadastro"
-            >
-              <Text style={styles.cadastroLink}>Criar cadastro</Text>
-            </TouchableOpacity>
+            <Botao titulo="Entrar" onPress={entrar} carregando={carregando} compact />
+            <View style={styles.cadastroArea}>
+              <Text style={styles.cadastroTexto}>Ainda não personalizou o app?</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("Cadastro")}
+                accessibilityRole="button"
+                accessibilityLabel="Ir para o cadastro"
+              >
+                <Text style={styles.cadastroLink}>Criar cadastro</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </AppScrollView>
       </KeyboardAvoidingView>
@@ -104,8 +106,23 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: "center",
+    alignItems: "center",
     padding: 24,
     backgroundColor: colors.background,
+  },
+  formArea: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 30,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   logo: {
     fontSize: 36,
@@ -136,11 +153,12 @@ const criarStyles = (colors: AppColors) => StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.secondary,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 14,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
     color: colors.text,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "500",
     shadowColor: colors.primary,
     shadowOpacity: 0.04,
